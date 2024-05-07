@@ -7,6 +7,7 @@ from RPA.Archive import Archive
 from robocorp.log import exception, info
 from RPA.Browser.Selenium import Selenium
 import time
+from playwright.sync_api import expect
 
 
 @task
@@ -42,7 +43,7 @@ def get_orders():
 
     library = Tables()
     orders = library.read_table_from_csv(
-        "orders.csv", columns=["Order Number", "Head", "Body", "Legs", "Address"]
+        "orders.csv", columns=["Order number", "Head", "Body", "Legs", "Address"]
     )
 
     return orders
@@ -60,18 +61,22 @@ def fill_the_form(robot):
     page.fill("#address", robot["Address"])
     page.click("button:text('Preview')")
     #page.click("button:text('Order')")
+
+    
     while True:
-        page.click("button:text('Order')")
-        #Using query selector because if no elements match the selector, the return value resolves to null
-        order_another = page.query_selector("#order-another")
-        if order_another:
-            export_as_pdf(robot["Order Number"])
-            collect_results(robot["Order Number"])
-            order_another_bot()
-
-            close_pop_up()
-        break
-
+        try:
+            page.click("button:text('Order')")
+            #Using query selector because if no elements match the selector, the return value resolves to null
+            order_another = page.query_selector("#order-another")
+            if order_another:
+                export_as_pdf(robot["Order number"])
+                collect_results(robot["Order number"])
+                order_another_bot()
+                close_pop_up()
+                break
+        except:
+            continue
+    
 
 def fill_orders():
     """Loops through the rows of csv file"""
@@ -90,7 +95,8 @@ def collect_results(order_number):
     """Take a screenshot of the page"""
     page = browser.page()
     path = f"output/{order_number}.png"
-    page.screenshot(path="output/robot.png")
+    page.screenshot(path=path)
+    return path
 
     
 def order_another_bot():
