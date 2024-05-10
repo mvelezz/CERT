@@ -25,7 +25,7 @@ def order_robots_from_RobotSpareBin():
     open_robot_order_website()
     close_pop_up()
     fill_orders()
-    
+    archive_receipts()
     
     
 
@@ -69,13 +69,13 @@ def fill_the_form(robot):
             #Using query selector because if no elements match the selector, the return value resolves to null
             order_another = page.query_selector("#order-another")
             if order_another:
-                export_as_pdf(robot["Order number"])
-                collect_results(robot["Order number"])
-                order_another_bot()
-                close_pop_up()
-                break
+                pdf_path=export_as_pdf(int(robot["Order number"]))
+                image_path=collect_results(int(robot["Order number"]))
+                embed_pdf(image_path, pdf_path)
         except:
-            continue
+            order_another_bot()
+            close_pop_up()
+            break
     
 
 def fill_orders():
@@ -94,9 +94,9 @@ def close_pop_up():
 def collect_results(order_number):
     """Take a screenshot of the page"""
     page = browser.page()
-    path = f"output/{order_number}.png"
-    page.screenshot(path=path)
-    return path
+    image_path = f"output/screenshots/{order_number}.png"
+    page.locator("#robot-preview-image").screenshot(path=image_path)
+    return image_path
 
     
 def order_another_bot():
@@ -113,3 +113,17 @@ def export_as_pdf(order_number):
     path = f"output/receipts/{order_number}.pdf"
     pdf.html_to_pdf(receipt_results_html, path)
     return path
+
+def embed_pdf(image_path, pdf_path):
+    pdf = PDF()
+
+    pdf.add_watermark_image_to_pdf(
+        image_path,
+        pdf_path,
+        output_path=pdf_path
+    )
+
+def archive_receipts():
+    """Archives all the receipt pdfs into a single zip archive"""
+    lib = Archive()
+    lib.archive_folder_with_zip("./output/receipts", "./output/receipts.zip")
